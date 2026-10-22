@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Participant portal – TraceChain</title><link rel="stylesheet" href="css/style.css"></head><body>
+<nav class="nav"><a class="logo" href="index.html"><i>📦</i><span>TraceChain</span></a><div class="links"><a href="index.html" class="">Home</a><a href="track.html" class="">Track</a><a href="participant.html" class="on">Participant</a><a href="admin.html" class="">Admin</a></div><button class="btn" id="wbtn">Connect wallet</button></nav>
+<main class="wrap"><h1>Participant portal</h1><p class="sub">Register products and manage custody.</p><div id="gate"><div class="notice">Connect your wallet to continue.</div></div>
+<div id="pp" style="display:none">
+<div class="panel"><h2>Register a product</h2><label>Product name</label><input id="pn" placeholder="e.g. Organic cocoa beans"><label>Batch / lot number</label><input id="pb" placeholder="e.g. LOT-2026-014"><label>Origin location</label><input id="po" placeholder="e.g. Ondo State, Nigeria"><br><br><button class="btn" id="reg">Register product</button></div>
+<div class="panel" id="act" style="display:none"><h2 id="at"></h2><label>Current location</label><input id="al" placeholder="e.g. Lagos warehouse"><label>Status</label><select id="as"><option>In production</option><option>Packed</option><option selected>In transit</option><option>In warehouse</option><option>Quality check</option><option>Out for delivery</option><option>Received</option></select><label>Note (optional)</label><input id="an"><label>Recipient wallet (only for custody transfer)</label><input id="ar" placeholder="0x…"><br><br>
+<div class="row2" style="flex-wrap:wrap"><button class="btn ghost" id="bu">Log update</button><button class="btn" id="bt">Transfer custody</button><button class="btn danger" id="bd">Mark delivered</button><button class="btn ghost" id="bc">Cancel</button></div></div>
+<div class="panel"><h2>My products</h2><div id="mine"></div></div></div></main>
+<footer>© 2026 TraceChain · Built on BOT Chain<br><a href="https://botchain.ai" target="_blank" rel="noopener">BOT Chain Website</a> · <a href="https://scan.bohr.life" target="_blank" rel="noopener">BOT Chain Explorer</a></footer><div id="toast"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script><script src="js/app.js"></script>
+<script>
+let cur=null;
+document.addEventListener("ready",async()=>{
+  const p=await vault.participants(account);
+  if(p[2]){$("#gate").innerHTML='<div class="panel"><span class="badge ok">Approved participant</span> <b>'+esc(p[0])+'</b> · '+esc(p[1])+'</div>';$("#pp").style.display="block";mine()}
+  else $("#gate").innerHTML='<div class="notice">This wallet isn’t an approved participant. Ask the network admin to register it.</div>';
+});
+async function mine(){
+  const ids=await vault.productsOf(account);let h="";
+  for(const id of [...ids].reverse()){const p=await vault.getProduct(id),holding=p[4].toLowerCase()===account.toLowerCase()&&!p[6];
+    h+=`<div class="rec"><div class="top"><span class="badge ${p[6]?"ok":holding?"":"off"}">${p[6]?"Delivered":holding?"In your custody":"Handed over"}</span><span>ID ${id}</span></div><p><b>${esc(p[0])}</b> · ${esc(p[1])||"no batch"}</p><div class="top"><span>Holder: ${esc(await nameOf(p[4]))}</span><span><a href="track.html?id=${id}" style="color:var(--p2);font-weight:600">View journey →</a></span></div>${holding?`<button class="btn sm" data-m="${id}" data-n="${esc(p[0])}">Manage</button>`:""}</div>`}
+  $("#mine").innerHTML=h||'<p class="empty">No products yet. Register one above.</p>';
+  document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{cur=b.dataset.m;$("#at").textContent="Manage #"+cur+" – "+b.dataset.n;$("#act").style.display="block";$("#act").scrollIntoView({behavior:"smooth"})});
+}
+const done=async ok=>{if(ok){$("#act").style.display="none";["al","an","ar"].forEach(x=>$("#"+x).value="");mine()}};
+$("#reg").onclick=async()=>{
+  const n=$("#pn").value.trim();if(!n)return toast("Product name is required",1);
+  if(await tx(vault.registerProduct(n,$("#pb").value.trim(),$("#po").value.trim()),"Product registered")){["pn","pb","po"].forEach(x=>$("#"+x).value="");mine()}
+};
+$("#bu").onclick=async()=>done(await tx(vault.addUpdate(cur,$("#al").value.trim(),$("#as").value,$("#an").value.trim()),"Update logged"));
+$("#bt").onclick=async()=>{const r=$("#ar").value.trim();if(!ethers.isAddress(r))return toast("Enter the recipient’s wallet address",1);
+  done(await tx(vault.transferCustody(cur,r,$("#al").value.trim(),$("#as").value,$("#an").value.trim()),"Custody transferred"))};
+$("#bd").onclick=async()=>{if(confirm("Mark as delivered? This closes the product’s journey."))done(await tx(vault.markDelivered(cur,$("#al").value.trim(),$("#an").value.trim()),"Marked as delivered"))};
+$("#bc").onclick=()=>$("#act").style.display="none";
+</script></body></html>

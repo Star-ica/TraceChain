@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Track – TraceChain</title><link rel="stylesheet" href="css/style.css"></head><body>
+<nav class="nav"><a class="logo" href="index.html"><i>📦</i><span>TraceChain</span></a><div class="links"><a href="index.html" class="">Home</a><a href="track.html" class="on">Track</a><a href="participant.html" class="">Participant</a><a href="admin.html" class="">Admin</a></div><button class="btn" id="wbtn">Connect wallet</button></nav>
+<main class="wrap"><h1>Track a product</h1><p class="sub">Public lookup. No wallet needed.</p>
+<div class="panel"><label>Tracking ID</label><div class="row2"><input id="pid" type="number" min="0" placeholder="e.g. 0"><button class="btn" id="go">Track</button></div></div><div id="res"></div></main>
+<footer>© 2026 TraceChain · Built on BOT Chain<br><a href="https://botchain.ai" target="_blank" rel="noopener">BOT Chain Website</a> · <a href="https://scan.bohr.life" target="_blank" rel="noopener">BOT Chain Explorer</a></footer><div id="toast"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script><script src="js/app.js"></script>
+<script>
+async function track(){
+  const id=$("#pid").value.trim();if(id===""||isNaN(id))return toast("Enter a tracking ID",1);
+  if(!ro)return toast("Set CONTRACT_ADDRESS in js/app.js",1);
+  $("#res").innerHTML='<p class="empty">Loading…</p>';
+  try{
+    const p=await ro.getProduct(id),n=Number(await ro.stepCount(id));let t="";
+    for(let i=0;i<n;i++){const s=await ro.getStep(id,i);
+      t+=`<div class="step"><b>${esc(s[2])}</b><div>${esc(s[3])||""}</div><div class="meta">📍 ${esc(s[1])||"—"} · ${when(s[4])}<br>Logged by ${esc(await nameOf(s[0]))}</div></div>`}
+    $("#res").innerHTML=`<div class="panel"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h2 style="margin:0">${esc(p[0])}</h2><span class="badge ${p[6]?"ok":""}">${p[6]?"Delivered":"In supply chain"}</span></div>
+      <dl class="kv" style="margin-top:12px"><dt>Tracking ID</dt><dd>${id}</dd><dt>Batch</dt><dd>${esc(p[1])||"—"}</dd><dt>Origin</dt><dd>${esc(p[2])||"—"}</dd><dt>Registered by</dt><dd>${esc(await nameOf(p[3]))}</dd><dt>Current holder</dt><dd>${esc(await nameOf(p[4]))}</dd><dt>Registered on</dt><dd>${when(p[5])}</dd></dl></div>
+      <div class="panel"><h2>Journey</h2><div class="tl">${t}</div></div>`;
+  }catch(e){$("#res").innerHTML='<div class="panel"><p class="status bad">✖ No product found with that ID</p></div>'}
+}
+$("#go").onclick=track;
+const q=new URLSearchParams(location.search).get("id");if(q!==null){$("#pid").value=q;track()}
+</script></body></html>
