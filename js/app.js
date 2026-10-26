@@ -1,6 +1,6 @@
-const CHAIN={id:968,hex:"0x3c8",name:"BOT Chain Testnet",symbol:"BOT",rpc:"https://rpc.bohr.life",explorer:"https://scan.bohr.life",website:"https://botchain.ai"};
+const CHAIN={id:677,hex:"0x2A5",name:"BOT Chain ",symbol:"BOT",rpc:"https://rpc.botchain.ai",explorer:"https://scan.botchain.ai",website:"https://botchain.ai"};
 // TODO: replace with your deployed TraceChain address
-const CONTRACT_ADDRESS="0x7D9846B279f159b1FFcCF797371b66CA1294E35f";
+const CONTRACT_ADDRESS="0x341e61d2a00281f0379336170570de80be687211";
 const ABI=["function admin() view returns (address)","function participants(address) view returns (string name,string role,bool active)","function addParticipant(address a,string name,string role)","function removeParticipant(address a)","function participantCount() view returns (uint256)","function participantAt(uint256 i) view returns (address,string,string,bool)","function registerProduct(string name,string batch,string origin) returns (uint256)","function addUpdate(uint256 id,string location,string status,string note)","function transferCustody(uint256 id,address to,string location,string status,string note)","function markDelivered(uint256 id,string location,string note)","function productCount() view returns (uint256)","function getProduct(uint256 id) view returns (string,string,string,address,address,uint256,bool)","function stepCount(uint256 id) view returns (uint256)","function getStep(uint256 id,uint256 i) view returns (address,string,string,string,uint256)","function productsOf(address a) view returns (uint256[])"];
 let signer,account,vault;
 const ro=/^0x0+$/.test(CONTRACT_ADDRESS)?null:new ethers.Contract(CONTRACT_ADDRESS,ABI,new ethers.JsonRpcProvider(CHAIN.rpc));
