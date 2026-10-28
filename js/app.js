@@ -14,17 +14,48 @@ async function ensureChain(){
   catch(e){if(e.code!==4902&&e.code!==-32603)throw e;
     await ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:CHAIN.hex,chainName:CHAIN.name,nativeCurrency:{name:"BOT",symbol:CHAIN.symbol,decimals:18},rpcUrls:[CHAIN.rpc],blockExplorerUrls:[CHAIN.explorer]}]})}
 }
-async function connect(){
-  if(!window.ethereum)return toast("Install MetaMask or another EVM wallet.",1);
-  try{
+async function connect(silent = false) {
+  if (!window.ethereum) {
+    if (!silent) toast("Install MetaMask or another EVM wallet.", 1);
+    return;
+  }
+  try {
+    const p = new ethers.BrowserProvider(ethereum);
+
+    if (silent) {
+      // eth_accounts never triggers a popup
+      const accounts = await p.send("eth_accounts", []);
+      if (!accounts.length) return; // not approved yet, stop silently
+    } else {
+      // eth_requestAccounts FIRST — triggers the MetaMask popup
+      await p.send("eth_requestAccounts", []);
+    }
+
+    // Chain switch only AFTER accounts are available
     await ensureChain();
-    const p=new ethers.BrowserProvider(ethereum);await p.send("eth_requestAccounts",[]);
-    signer=await p.getSigner();account=await signer.getAddress();$("#wbtn").textContent=short(account);
-    if(/^0x0+$/.test(CONTRACT_ADDRESS))return toast("Set CONTRACT_ADDRESS in js/app.js",1);
-    vault=new ethers.Contract(CONTRACT_ADDRESS,ABI,signer);
+
+    signer = await p.getSigner();
+    account = await signer.getAddress();
+    $("#wbtn").textContent = short(account);
+
+    if (/^0x0+$/.test(CONTRACT_ADDRESS)) return toast("Set CONTRACT_ADDRESS in js/app.js", 1);
+    vault = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
     document.dispatchEvent(new Event("ready"));
-  }catch(e){toast(e.shortMessage||e.message,1)}
+  } catch (e) {
+    if (!silent) toast(e.shortMessage || e.message, 1);
+  }
 }
+
+addEventListener("load", () => {
+  $("#wbtn").onclick = () => connect(false);
+
+  // Auto-connect silently on load if previously approved
+  if (window.ethereum) {
+    connect(true);
+    ethereum.on("accountsChanged", accs => accs.length ? connect(true) : location.reload());
+    ethereum.on("chainChanged", () => location.reload());
+  }
+});
 async function tx(p,msg){
   try{const t=await p;toast("Transaction sent… waiting for confirmation");await t.wait();
     toast(msg+' ✓ <a target="_blank" href="'+CHAIN.explorer+'/tx/'+t.hash+'">View on explorer</a>');return true}
